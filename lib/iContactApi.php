@@ -1103,4 +1103,89 @@ class iContactApi {
 		// Return instance
 		return $this;
 	}
+
+	/**
+	 * This method grabs the all the contacts associated
+	 * with a list
+	 * @access public
+	 * @param integer $iListId
+	 * @return array
+	 * @since 09/06/2016
+	**/
+	public function getContactsFromList($iListId) {
+		// Valid statuses
+		$aValidStatuses = array('normal', 'pending', 'unsubscribed');
+		// Setup the subscription and make the call
+		$aSubscriptions = $this->makeCall("/a/{$this->setAccountId()}/c/{$this->setClientFolderId()}/subscriptions", 'GET', array(
+			array(
+				'listId'    => $iListId
+			)
+		), 'subscriptions');
+		// Return the subscription
+		return $aSubscriptions;
+	}
+
+	/**
+	 * Search for a contact by a specific field
+	 * @access public
+	 * @param string $field The field to search
+	 * @param string $value The value to find in the field
+	 * @return array
+	 * @example  getContactByFieldValue('email','anon@anonymous.com')
+	 * 
+	**/
+	public function getContactByFieldValue($field, $value) {
+		// Make the call and return the data
+		return $this->makeCall("/a/{$this->setAccountId()}/c/{$this->setClientFolderId()}/contacts?{$field}={$value}", 'GET', null, 'contacts');
+	}
+
+	/**
+	 * Search for a contact by multiple field
+	 * @access public
+	 * @param array fieldValue  a group of key identifiers and a set of associated values
+	 * @return array
+	 * @example  searchContactHistory(array('email' => 'anon@anonymous.com'))
+	 * 
+	**/
+	public function searchContactHistory($fieldValue) {
+
+		if(!is_array($fieldValue) && !empty($fieldValue)){
+			$this->addError('$fieldValue must be an array of fields and Values');
+		}
+		
+		// Make the call and return the data
+		return $this->makeCall("/a/{$this->setAccountId()}/c/{$this->setClientFolderId()}/contacts?".http_build_query($fieldValue), 'GET', null, 'contacts');			
+	}
+
+
+	/**
+	 * Move a contact from one list to another
+	 * supported only by icontact api 2.2 or more
+	 * @access public
+	 * @param  integer $contactId  The contact ID
+	 * @param  integer $oldListId  The list to move the contact from
+	 * @param  integer $newListId The list to move the contact to
+	 * @param  string $sStatus   The subscribtion status
+	 * @link http://www.walkswithme.net/icontact-api-integration-using-php
+	 * @return object
+	 */
+	public function moveSubscriptionToList($contactId,$fromListId, $toListId, $sStatus = 'normal') {
+		// Valid statuses
+		$aValidStatuses = array('normal', 'pending', 'unsubscribed');
+		
+		// Check for a valid status
+		if (!empty($sStatus) && !in_array($sStatus, $aValidStatuses)) {
+		$sStatus = 'normal';
+		}
+
+		$sSubscriptionId = $fromListId .'_'. $contactId;
+
+		// Setup the subscription and make the call
+		$aSubscription = $this->makeCall("/a/{$this->setAccountId()}/c/{$this->setClientFolderId()}/subscriptions/{$sSubscriptionId}", 'PUT', array(
+		'listId' => $toListId,
+		'status' => $sStatus,
+		), 'subscription');
+		// Return the subscription
+		return $aSubscription;
+	}
 }
